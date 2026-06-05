@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { CHANNELS } from '../config'
+import { CHANNELS, MODEL_RELEASE_DATES } from '../config'
 import pricingData from '../data/pricing.json'
 
 interface RawModel {
@@ -26,7 +26,7 @@ export interface ModelItem {
   }
 }
 
-const pricing = pricingData as Record<string, { input: string; output: string; releaseDate?: string }>
+const pricing = pricingData as Record<string, { input: string; output: string }>
 
 function inferProvider(id: string): ModelItem['provider'] {
   if (id.startsWith('claude')) return 'Claude'
@@ -102,7 +102,7 @@ export function useModels() {
               id: m.id,
               displayName: m.display_name,
               provider: inferProvider(m.id),
-              createdAt: p?.releaseDate ?? '',
+              createdAt: MODEL_RELEASE_DATES[m.id] ?? '',
               channels: [{ name: channel.name, discount: channel.discount }],
               pricing: p ? { input: p.input, output: p.output } : undefined
             })

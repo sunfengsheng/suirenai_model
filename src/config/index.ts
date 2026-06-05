@@ -1,6 +1,4 @@
-export const BASE_URL = 'https://api.suirenai.com'
-
-export interface Channel {
+interface Channel {
   key: string
   name: string
   discount: number  // e.g. 0.8 = 8折, 1.0 = 无折扣
@@ -28,3 +26,24 @@ export const CHANNELS: Channel[] = [
     discount: 0.3
   }
 ]
+
+// 模型上架日期，按模型 ID 配置（YYYY-MM-DD 格式）
+export const MODEL_RELEASE_DATES: Record<string, string> = {
+  'gpt-4o': '2024-05-13',
+  'openai/gpt-4o': '2024-05-13',
+  'openai/gpt-4o-mini': '2024-07-18',
+  'openai/gpt-4.1': '2025-04-14',
+  'openai/gpt-4.1-mini': '2025-04-14',
+  'openai/gpt-4.1-nano': '2025-04-14',
+  'gpt-5.2': '2025-07-09',
+  'gpt-5.4': '2025-08-01',
+  'gpt-5.4-mini': '2025-08-01',
+  'gpt-5.5': '2025-09-01',
+  'gpt-5.3-codex': '2025-07-01',
+  'openai/gpt-5.3-codex': '2025-07-01',
+  'openai/gpt-5.5': '2025-09-01',
+  'claude-haiku-4-5': '2025-07-08',
+  'claude-sonnet-4-6': '2025-10-01',
+  'claude-opus-4-6': '2025-10-01',
+  'claude-opus-4-7': '2026-02-01'
+}
