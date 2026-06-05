@@ -16,6 +16,10 @@
       <div class="note-unit">USD / 1M tokens</div>
       <div class="note-rate">1 USD ≈ ¥{{ exchangeRate.toFixed(2) }}</div>
     </div>
+    <div class="sidebar-contact">
+      <div class="contact-label">联系我们</div>
+      <div class="contact-qq">QQ 群：876203676</div>
+    </div>
   </div>
 </template>
 
@@ -66,5 +70,22 @@ defineEmits<{
 .note-rate {
   font-size: 11px;
   color: #e6a23c;
+}
+.sidebar-contact {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  line-height: 1.8;
+}
+.contact-label {
+  font-size: 11px;
+  color: #c0c4cc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.contact-qq {
+  font-size: 12px;
+  color: #606266;
+  font-weight: 500;
+  user-select: all;
 }
 </style>
