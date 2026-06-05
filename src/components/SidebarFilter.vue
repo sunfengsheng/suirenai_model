@@ -11,6 +11,11 @@
         <el-badge :value="item.count" class="count-badge" type="info" />
       </el-menu-item>
     </el-menu>
+    <div class="sidebar-note">
+      <div class="note-line">价格单位</div>
+      <div class="note-unit">USD / 1M tokens</div>
+      <div class="note-rate">1 USD ≈ ¥{{ exchangeRate.toFixed(2) }}</div>
+    </div>
   </div>
 </template>
 
@@ -18,6 +23,7 @@
 defineProps<{
   modelValue: string
   items: { value: string; label: string; count: number }[]
+  exchangeRate: number
 }>()
 
 defineEmits<{
@@ -40,7 +46,25 @@ defineEmits<{
   justify-content: space-between;
   align-items: center;
 }
-.count-badge {
-  margin-left: auto;
+.count-badge { margin-left: auto; }
+.sidebar-note {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  line-height: 1.8;
+}
+.note-line {
+  font-size: 11px;
+  color: #c0c4cc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.note-unit {
+  font-size: 12px;
+  color: #606266;
+  font-weight: 500;
+}
+.note-rate {
+  font-size: 11px;
+  color: #e6a23c;
 }
 </style>

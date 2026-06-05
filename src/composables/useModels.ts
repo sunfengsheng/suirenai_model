@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { OPENAI_KEY, CLAUDE_KEY } from '../config'
+import { CHANNELS } from '../config'
 import pricingData from '../data/pricing.json'
 
 interface RawModel {
@@ -14,10 +14,11 @@ export interface ModelItem {
   displayName: string
   provider: 'OpenAI' | 'Claude' | 'Other'
   createdAt: string
+  channelName: string
+  discount: number
   pricing?: {
     input: string
     output: string
-    unit: string
   }
 }
 
@@ -38,12 +39,24 @@ async function fetchWithKey(key: string): Promise<RawModel[]> {
   return json.data as RawModel[]
 }
 
+async function fetchExchangeRate(): Promise<number> {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY')
+    if (!res.ok) return 7.2
+    const json = await res.json()
+    return (json.rates?.CNY as number) ?? 7.2
+  } catch {
+    return 7.2
+  }
+}
+
 export function useModels() {
   const models = ref<ModelItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const searchQuery = ref('')
   const activeProvider = ref<'All' | 'OpenAI' | 'Claude' | 'Other'>('All')
+  const exchangeRate = ref(7.2)
 
   const filteredModels = computed(() =>
     models.value.filter(m => {
@@ -58,44 +71,49 @@ export function useModels() {
     loading.value = true
     error.value = null
 
-    const results = await Promise.allSettled([
-      fetchWithKey(OPENAI_KEY),
-      fetchWithKey(CLAUDE_KEY)
+    const [rateResult, ...channelResults] = await Promise.allSettled([
+      fetchExchangeRate(),
+      ...CHANNELS.map(ch => fetchWithKey(ch.key))
     ])
 
-    const allRaw: RawModel[] = []
+    if (rateResult.status === 'fulfilled') {
+      exchangeRate.value = rateResult.value
+    }
+
+    const allItems: ModelItem[] = []
     const errors: string[] = []
 
-    results.forEach((r, i) => {
+    channelResults.forEach((r, i) => {
+      const channel = CHANNELS[i]
       if (r.status === 'fulfilled') {
-        allRaw.push(...r.value)
+        const seen = new Set<string>()
+        for (const m of r.value) {
+          if (seen.has(m.id)) continue
+          seen.add(m.id)
+          const p = pricing[m.id]
+          allItems.push({
+            id: m.id,
+            displayName: m.display_name,
+            provider: inferProvider(m.id),
+            createdAt: m.created_at,
+            channelName: channel.name,
+            discount: channel.discount,
+            pricing: p ? { input: p.input, output: p.output } : undefined
+          })
+        }
       } else {
-        errors.push(`${i === 0 ? 'OpenAI' : 'Claude'} Key 请求失败`)
+        errors.push(`${channel.name} 请求失败`)
       }
     })
 
-    if (errors.length === 2) {
-      error.value = '两个 Key 均请求失败，请检查 src/config/index.ts'
+    if (errors.length === CHANNELS.length) {
+      error.value = '所有渠道均请求失败，请检查 src/config/index.ts'
     }
 
-    const seen = new Set<string>()
-    models.value = allRaw
-      .filter(m => {
-        if (seen.has(m.id)) return false
-        seen.add(m.id)
-        return true
-      })
-      .map(m => ({
-        id: m.id,
-        displayName: m.display_name,
-        provider: inferProvider(m.id),
-        createdAt: m.created_at,
-        pricing: pricing[m.id]
-      }))
-
+    models.value = allItems
     loading.value = false
     return errors
   }
 
-  return { models, loading, error, searchQuery, activeProvider, filteredModels, fetchModels }
+  return { models, loading, error, searchQuery, activeProvider, filteredModels, fetchModels, exchangeRate }
 }

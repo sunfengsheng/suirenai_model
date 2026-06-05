@@ -5,7 +5,7 @@
     </header>
 
     <div class="app-body">
-      <SidebarFilter v-model="activeProvider" :items="sidebarItems" />
+      <SidebarFilter v-model="activeProvider" :items="sidebarItems" :exchange-rate="exchangeRate" />
 
       <main class="main-content">
         <div class="search-bar">
@@ -48,15 +48,16 @@
         <div v-else class="model-grid">
           <ModelCard
             v-for="model in filteredModels"
-            :key="model.id"
+            :key="`${model.channelName}-${model.id}`"
             :model="model"
+            :exchange-rate="exchangeRate"
             @click="selectedModel = model"
           />
         </div>
       </main>
     </div>
 
-    <ModelDetail v-model="selectedModel" />
+    <ModelDetail v-model="selectedModel" :exchange-rate="exchangeRate" />
   </div>
 </template>
 
@@ -69,7 +70,7 @@ import ModelCard from './components/ModelCard.vue'
 import ModelDetail from './components/ModelDetail.vue'
 import type { ModelItem } from './composables/useModels'
 
-const { models, loading, error, searchQuery, activeProvider, filteredModels, fetchModels } = useModels()
+const { models, loading, error, searchQuery, activeProvider, filteredModels, fetchModels, exchangeRate } = useModels()
 const selectedModel = ref<ModelItem | null>(null)
 const partialErrors = ref<string[]>([])
 
