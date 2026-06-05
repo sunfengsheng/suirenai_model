@@ -1,7 +1,7 @@
 <template>
   <el-card class="model-card" shadow="hover" @click="$emit('click')">
     <div class="card-header">
-      <span class="provider-icon">{{ providerIcon }}</span>
+      <ProviderIcon :provider="model.provider" :size="24" :class="'icon-' + model.provider.toLowerCase()" />
       <el-tag :type="tagType" size="small">{{ model.provider }}</el-tag>
     </div>
     <div class="model-name" :title="model.id">{{ model.displayName }}</div>
@@ -23,15 +23,10 @@ import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { CopyDocument } from '@element-plus/icons-vue'
 import type { ModelItem } from '../composables/useModels'
+import ProviderIcon from './ProviderIcon.vue'
 
 const props = defineProps<{ model: ModelItem }>()
 defineEmits<{ (e: 'click'): void }>()
-
-const providerIcon = computed(() => {
-  if (props.model.provider === 'Claude') return '🟠'
-  if (props.model.provider === 'OpenAI') return '🟢'
-  return '⚪'
-})
 
 const tagType = computed((): '' | 'success' | 'warning' | 'info' => {
   if (props.model.provider === 'Claude') return 'warning'
@@ -86,5 +81,14 @@ async function copyId() {
 }
 .card-footer {
   margin-top: 4px;
+}
+.icon-openai {
+  color: #10a37f;
+}
+.icon-claude {
+  color: #d97757;
+}
+.icon-other {
+  color: #909399;
 }
 </style>
