@@ -33,11 +33,7 @@
           </div>
         </template>
 
-        <el-empty
-          v-else-if="error"
-          :description="error"
-          image-size="120"
-        />
+        <el-empty v-else-if="error" :description="error" image-size="120" />
 
         <el-empty
           v-else-if="!loading && filteredModels.length === 0"
@@ -48,9 +44,8 @@
         <div v-else class="model-grid">
           <ModelCard
             v-for="model in filteredModels"
-            :key="`${model.channelName}-${model.id}`"
+            :key="model.id"
             :model="model"
-            :exchange-rate="exchangeRate"
             @click="selectedModel = model"
           />
         </div>
@@ -131,9 +126,7 @@ body {
   flex: 1;
   min-width: 0;
 }
-.search-bar {
-  margin-bottom: 16px;
-}
+.search-bar { margin-bottom: 16px; }
 .model-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

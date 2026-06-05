@@ -3,23 +3,20 @@
     <div class="card-header">
       <ProviderIcon :provider="model.provider" :size="24" :class="'icon-' + model.provider.toLowerCase()" />
       <el-tag :type="tagType" size="small">{{ model.provider }}</el-tag>
-      <el-tag size="small" class="channel-tag">{{ model.channelName }}</el-tag>
+      <el-tag size="small" type="info" class="channel-count">
+        {{ model.channels.length }} 个渠道
+      </el-tag>
     </div>
     <div class="model-name" :title="model.id">{{ model.displayName }}</div>
     <template v-if="model.pricing">
       <div class="pricing-row">
         <span class="label">输入</span>
         <span class="usd">${{ model.pricing.input }}</span>
-        <span class="arrow">→</span>
-        <span class="cny">¥{{ inputCNY }}</span>
       </div>
       <div class="pricing-row">
         <span class="label">输出</span>
         <span class="usd">${{ model.pricing.output }}</span>
-        <span class="arrow">→</span>
-        <span class="cny">¥{{ outputCNY }}</span>
       </div>
-      <div class="discount-badge">{{ discountLabel }}</div>
     </template>
     <div class="no-price" v-else>暂无定价</div>
     <div class="card-footer">
@@ -35,7 +32,7 @@ import { CopyDocument } from '@element-plus/icons-vue'
 import type { ModelItem } from '../composables/useModels'
 import ProviderIcon from './ProviderIcon.vue'
 
-const props = defineProps<{ model: ModelItem; exchangeRate: number }>()
+const props = defineProps<{ model: ModelItem }>()
 defineEmits<{ (e: 'click'): void }>()
 
 const tagType = computed((): '' | 'success' | 'warning' | 'info' => {
@@ -43,18 +40,6 @@ const tagType = computed((): '' | 'success' | 'warning' | 'info' => {
   if (props.model.provider === 'OpenAI') return 'success'
   return 'info'
 })
-
-const discountLabel = computed(() => {
-  const pct = Math.round(props.model.discount * 10)
-  return `${pct}折优惠`
-})
-
-function calcCNY(usd: string): string {
-  return (parseFloat(usd) * props.model.discount * props.exchangeRate).toFixed(2)
-}
-
-const inputCNY = computed(() => props.model.pricing ? calcCNY(props.model.pricing.input) : '')
-const outputCNY = computed(() => props.model.pricing ? calcCNY(props.model.pricing.output) : '')
 
 async function copyId() {
   await navigator.clipboard.writeText(props.model.id)
@@ -70,7 +55,7 @@ async function copyId() {
   gap: 6px;
   margin-bottom: 10px;
 }
-.channel-tag { margin-left: auto; }
+.channel-count { margin-left: auto; }
 .model-name {
   font-size: 14px;
   font-weight: 600;
@@ -83,29 +68,18 @@ async function copyId() {
 .pricing-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 12px;
+  color: #606266;
   margin-bottom: 4px;
 }
 .label { color: #909399; width: 24px; }
-.usd { color: #606266; }
-.arrow { color: #c0c4cc; font-size: 10px; }
-.cny { color: #e6a23c; font-weight: 600; }
-.discount-badge {
-  display: inline-block;
-  font-size: 11px;
-  color: #f56c6c;
-  background: #fef0f0;
-  border-radius: 4px;
-  padding: 1px 6px;
-  margin: 4px 0 8px;
-}
 .no-price {
   font-size: 12px;
   color: #c0c4cc;
   margin-bottom: 12px;
 }
-.card-footer { margin-top: 4px; }
+.card-footer { margin-top: 10px; }
 .icon-openai { color: #10a37f; }
 .icon-claude { color: #d97757; }
 .icon-other { color: #909399; }

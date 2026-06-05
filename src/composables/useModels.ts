@@ -9,13 +9,17 @@ interface RawModel {
   created_at: string
 }
 
+export interface ChannelEntry {
+  name: string
+  discount: number
+}
+
 export interface ModelItem {
   id: string
   displayName: string
   provider: 'OpenAI' | 'Claude' | 'Other'
   createdAt: string
-  channelName: string
-  discount: number
+  channels: ChannelEntry[]
   pricing?: {
     input: string
     output: string
@@ -80,7 +84,7 @@ export function useModels() {
       exchangeRate.value = rateResult.value
     }
 
-    const allItems: ModelItem[] = []
+    const modelMap = new Map<string, ModelItem>()
     const errors: string[] = []
 
     channelResults.forEach((r, i) => {
@@ -90,16 +94,19 @@ export function useModels() {
         for (const m of r.value) {
           if (seen.has(m.id)) continue
           seen.add(m.id)
-          const p = pricing[m.id]
-          allItems.push({
-            id: m.id,
-            displayName: m.display_name,
-            provider: inferProvider(m.id),
-            createdAt: m.created_at,
-            channelName: channel.name,
-            discount: channel.discount,
-            pricing: p ? { input: p.input, output: p.output } : undefined
-          })
+          if (modelMap.has(m.id)) {
+            modelMap.get(m.id)!.channels.push({ name: channel.name, discount: channel.discount })
+          } else {
+            const p = pricing[m.id]
+            modelMap.set(m.id, {
+              id: m.id,
+              displayName: m.display_name,
+              provider: inferProvider(m.id),
+              createdAt: m.created_at,
+              channels: [{ name: channel.name, discount: channel.discount }],
+              pricing: p ? { input: p.input, output: p.output } : undefined
+            })
+          }
         }
       } else {
         errors.push(`${channel.name} 请求失败`)
@@ -110,7 +117,7 @@ export function useModels() {
       error.value = '所有渠道均请求失败，请检查 src/config/index.ts'
     }
 
-    models.value = allItems
+    models.value = Array.from(modelMap.values())
     loading.value = false
     return errors
   }
