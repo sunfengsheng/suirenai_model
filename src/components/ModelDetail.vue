@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="!!modelValue"
-    @update:model-value="(v) => !v && $emit('update:modelValue', null)"
+    @update:model-value="(v: boolean) => !v && $emit('update:modelValue', null)"
     :title="modelValue?.displayName ?? ''"
     width="500px"
   >
