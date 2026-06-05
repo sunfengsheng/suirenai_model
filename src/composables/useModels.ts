@@ -26,7 +26,7 @@ export interface ModelItem {
   }
 }
 
-const pricing = pricingData as Record<string, { input: string; output: string; unit: string }>
+const pricing = pricingData as Record<string, { input: string; output: string; releaseDate?: string }>
 
 function inferProvider(id: string): ModelItem['provider'] {
   if (id.startsWith('claude')) return 'Claude'
@@ -102,7 +102,7 @@ export function useModels() {
               id: m.id,
               displayName: m.display_name,
               provider: inferProvider(m.id),
-              createdAt: m.created_at,
+              createdAt: p?.releaseDate ?? '',
               channels: [{ name: channel.name, discount: channel.discount }],
               pricing: p ? { input: p.input, output: p.output } : undefined
             })

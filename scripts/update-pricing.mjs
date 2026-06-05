@@ -64,7 +64,7 @@ async function main() {
     if (data?.input_cost_per_token != null && data?.output_cost_per_token != null) {
       const input = toPrice(data.input_cost_per_token)
       const output = toPrice(data.output_cost_per_token)
-      updated[ourId] = { input, output, unit: 'USD/1M tokens' }
+      updated[ourId] = { ...existing[ourId], input, output }
       found.push(`  ✅ ${ourId.padEnd(30)} 输入 $${input.padStart(6)}  输出 $${output}`)
     } else {
       notFound.push(`  ⚠️  ${ourId.padEnd(30)} (litellm key: ${litellmId})`)

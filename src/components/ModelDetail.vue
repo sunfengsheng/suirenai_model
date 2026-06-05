@@ -72,9 +72,11 @@ const tagType = computed((): '' | 'success' | 'warning' | 'info' => {
   return 'info'
 })
 
-const formattedDate = computed(() =>
-  props.modelValue ? new Date(props.modelValue.createdAt).toLocaleDateString('zh-CN') : ''
-)
+const formattedDate = computed(() => {
+  const d = props.modelValue?.createdAt
+  if (!d) return '未配置'
+  return new Date(d).toLocaleDateString('zh-CN')
+})
 
 const channelPricing = computed(() => {
   const m = props.modelValue
