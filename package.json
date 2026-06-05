@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "update-pricing": "node scripts/update-pricing.mjs"
   },
   "dependencies": {
     "element-plus": "^2.9.0",
