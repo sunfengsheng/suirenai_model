@@ -38,7 +38,6 @@ defineEmits<{ (e: 'click'): void }>()
 const tagType = computed((): '' | 'success' | 'warning' | 'info' => {
   if (props.model.provider === 'Claude') return 'warning'
   if (props.model.provider === 'OpenAI') return 'success'
-  if (props.model.provider === 'DeepSeek') return ''
   return 'info'
 })
 
