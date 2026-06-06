@@ -88,9 +88,16 @@ async function fetchLiteLLMPricing(): Promise<PricingData> {
       const result: PricingData = {}
       for (const [id, entry] of Object.entries(raw)) {
         if (entry.input_cost_per_token != null && entry.output_cost_per_token != null) {
-          result[id] = {
+          const priceEntry = {
             input: (entry.input_cost_per_token * 1_000_000).toFixed(2),
             output: (entry.output_cost_per_token * 1_000_000).toFixed(2)
+          }
+          result[id] = priceEntry
+          // also index by bare model id (strips provider prefix like "deepseek/deepseek-chat" → "deepseek-chat")
+          const slash = id.indexOf('/')
+          if (slash !== -1) {
+            const bareId = id.slice(slash + 1)
+            if (!result[bareId]) result[bareId] = priceEntry
           }
         }
       }
