@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
-import { CHANNELS, MODEL_RELEASE_DATES } from '../config'
-import pricingData from '../data/pricing.json'
+import type { AppConfig, Channel } from '../config'
 
 interface RawModel {
   id: string
@@ -26,7 +25,7 @@ export interface ModelItem {
   }
 }
 
-const pricing = pricingData as Record<string, { input: string; output: string }>
+type PricingData = Record<string, { input: string; output: string }>
 
 function inferProvider(id: string): ModelItem['provider'] {
   if (id.startsWith('claude')) return 'Claude'
@@ -54,6 +53,22 @@ async function fetchExchangeRate(): Promise<number> {
   }
 }
 
+async function loadConfig(): Promise<AppConfig> {
+  const res = await fetch('/config.json')
+  if (!res.ok) throw new Error('Failed to load config.json')
+  return res.json()
+}
+
+async function loadPricing(): Promise<PricingData> {
+  try {
+    const res = await fetch('/pricing.json')
+    if (!res.ok) return {}
+    return res.json()
+  } catch {
+    return {}
+  }
+}
+
 export function useModels() {
   const models = ref<ModelItem[]>([])
   const loading = ref(false)
@@ -75,20 +90,32 @@ export function useModels() {
     loading.value = true
     error.value = null
 
-    const [rateResult, ...channelResults] = await Promise.allSettled([
+    let config: AppConfig
+    try {
+      config = await loadConfig()
+    } catch {
+      error.value = '无法加载 config.json，请检查 public/config.json 是否存在'
+      loading.value = false
+      return []
+    }
+
+    const [rateResult, pricingResult, ...channelResults] = await Promise.allSettled([
       fetchExchangeRate(),
-      ...CHANNELS.map(ch => fetchWithKey(ch.key))
+      loadPricing(),
+      ...config.channels.map((ch: Channel) => fetchWithKey(ch.key))
     ])
 
     if (rateResult.status === 'fulfilled') {
       exchangeRate.value = rateResult.value
     }
 
+    const pricing: PricingData = pricingResult.status === 'fulfilled' ? pricingResult.value : {}
+
     const modelMap = new Map<string, ModelItem>()
     const errors: string[] = []
 
     channelResults.forEach((r, i) => {
-      const channel = CHANNELS[i]
+      const channel = config.channels[i]
       if (r.status === 'fulfilled') {
         const seen = new Set<string>()
         for (const m of r.value) {
@@ -102,7 +129,7 @@ export function useModels() {
               id: m.id,
               displayName: m.display_name,
               provider: inferProvider(m.id),
-              createdAt: MODEL_RELEASE_DATES[m.id] ?? '',
+              createdAt: config.modelReleaseDates?.[m.id] ?? '',
               channels: [{ name: channel.name, discount: channel.discount }],
               pricing: p ? { input: p.input, output: p.output } : undefined
             })
@@ -113,8 +140,8 @@ export function useModels() {
       }
     })
 
-    if (errors.length === CHANNELS.length) {
-      error.value = '所有渠道均请求失败，请检查 src/config/index.ts'
+    if (config.channels.length > 0 && errors.length === config.channels.length) {
+      error.value = '所有渠道均请求失败，请检查 public/config.json'
     }
 
     models.value = Array.from(modelMap.values())

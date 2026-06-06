@@ -1,15 +1,14 @@
-// 从 LiteLLM 社区定价数据自动更新 src/data/pricing.json
+// 从 LiteLLM 社区定价数据自动更新 public/pricing.json
+// 同时自动发现新模型并添加空价格条目
 // 运行方式：npm run update-pricing
-//
-// 找不到的模型保留 pricing.json 中的原有手动值。
-// 新模型 ID 与 LiteLLM 的 ID 不一致时，在 MANUAL_MAP 里加映射。
 
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const PRICING_PATH = resolve(__dirname, '../src/data/pricing.json')
+const PRICING_PATH = resolve(__dirname, '../public/pricing.json')
+const CONFIG_PATH = resolve(__dirname, '../public/config.json')
 
 // jsDelivr 是 GitHub 的 CDN 镜像，国内可访问
 const LITELLM_URLS = [
@@ -49,22 +48,69 @@ async function fetchWithFallback() {
   throw new Error('所有镜像均不可访问，请检查网络')
 }
 
+async function fetchModelsFromChannel(baseUrl, key) {
+  try {
+    const res = await fetch(`${baseUrl}/v1/models`, {
+      headers: { Authorization: `Bearer ${key}` }
+    })
+    if (!res.ok) return []
+    const json = await res.json()
+    return (json.data ?? []).map(m => m.id)
+  } catch {
+    return []
+  }
+}
+
 async function main() {
-  console.log('正在从 LiteLLM 获取定价数据...')
+  if (!existsSync(CONFIG_PATH)) {
+    console.error('找不到 public/config.json')
+    process.exit(1)
+  }
+  const config = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
+  const baseUrl = config.baseUrl ?? 'https://api.suirenai.com'
+  const channels = config.channels ?? []
+
+  const existing = existsSync(PRICING_PATH)
+    ? JSON.parse(readFileSync(PRICING_PATH, 'utf-8'))
+    : {}
+
+  // 自动发现各渠道的模型
+  console.log('正在从各渠道获取模型列表...')
+  const allModelIds = new Set(Object.keys(existing))
+  for (const ch of channels) {
+    const ids = await fetchModelsFromChannel(baseUrl, ch.key)
+    ids.forEach(id => allModelIds.add(id))
+    console.log(`  ${ch.name}: ${ids.length} 个模型`)
+  }
+
+  // 新模型加空价格占位
+  const updated = { ...existing }
+  const newModels = []
+  for (const id of allModelIds) {
+    if (!updated[id]) {
+      updated[id] = { input: '', output: '' }
+      newModels.push(id)
+    }
+  }
+  if (newModels.length > 0) {
+    console.log(`\n新增 ${newModels.length} 个模型（价格待补充）:`)
+    newModels.forEach(id => console.log(`  + ${id}`))
+  }
+
+  // 从 LiteLLM 同步价格
+  console.log('\n正在从 LiteLLM 获取定价数据...')
   const litellm = await fetchWithFallback()
 
-  const existing = JSON.parse(readFileSync(PRICING_PATH, 'utf-8'))
-  const updated = { ...existing }
   const found = []
   const notFound = []
 
-  for (const ourId of Object.keys(existing)) {
+  for (const ourId of Object.keys(updated)) {
     const litellmId = MANUAL_MAP[ourId] ?? ourId
     const data = litellm[litellmId]
     if (data?.input_cost_per_token != null && data?.output_cost_per_token != null) {
       const input = toPrice(data.input_cost_per_token)
       const output = toPrice(data.output_cost_per_token)
-      updated[ourId] = { ...existing[ourId], input, output }
+      updated[ourId] = { ...updated[ourId], input, output }
       found.push(`  ✅ ${ourId.padEnd(30)} 输入 $${input.padStart(6)}  输出 $${output}`)
     } else {
       notFound.push(`  ⚠️  ${ourId.padEnd(30)} (litellm key: ${litellmId})`)
@@ -78,12 +124,12 @@ async function main() {
     found.forEach(l => console.log(l))
   }
   if (notFound.length) {
-    console.log('\n未找到（保留原价）:')
+    console.log('\n未找到（保留原价或空值）:')
     notFound.forEach(l => console.log(l))
     console.log('\n  → 可在 scripts/update-pricing.mjs 的 MANUAL_MAP 中添加 ID 映射')
-    console.log('  → 或直接手动编辑 src/data/pricing.json')
+    console.log('  → 或直接手动编辑 public/pricing.json')
   }
-  console.log(`\n完成：${found.length}/${Object.keys(existing).length} 个模型已从 LiteLLM 同步。`)
+  console.log(`\n完成：${found.length}/${Object.keys(updated).length} 个模型已从 LiteLLM 同步。`)
 }
 
 main().catch(err => { console.error('错误:', err.message); process.exit(1) })
