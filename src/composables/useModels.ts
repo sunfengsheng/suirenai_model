@@ -167,7 +167,8 @@ export function useModels() {
           if (modelMap.has(m.id)) {
             modelMap.get(m.id)!.channels.push({ name: channel.name, discount: channel.discount })
           } else {
-            const p = pricing[m.id]
+            const bareId = m.id.includes('/') ? m.id.slice(m.id.indexOf('/') + 1) : m.id
+          const p = pricing[m.id] ?? pricing[bareId]
             modelMap.set(m.id, {
               id: m.id,
               displayName: m.display_name || m.id,
