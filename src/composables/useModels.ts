@@ -3,9 +3,9 @@ import type { AppConfig, Channel } from '../config'
 
 interface RawModel {
   id: string
-  type: string
-  display_name: string
-  created_at: string
+  type?: string
+  display_name?: string
+  created_at?: string
 }
 
 export interface ChannelEntry {
@@ -16,7 +16,7 @@ export interface ChannelEntry {
 export interface ModelItem {
   id: string
   displayName: string
-  provider: 'OpenAI' | 'Claude' | 'Other'
+  provider: 'OpenAI' | 'Claude' | 'DeepSeek' | 'Other'
   createdAt: string
   channels: ChannelEntry[]
   pricing?: {
@@ -35,6 +35,7 @@ interface LiteLLMEntry {
 function inferProvider(id: string): ModelItem['provider'] {
   if (id.startsWith('claude')) return 'Claude'
   if (id.startsWith('gpt') || id.startsWith('openai/')) return 'OpenAI'
+  if (id.startsWith('deepseek')) return 'DeepSeek'
   return 'Other'
 }
 
@@ -106,7 +107,7 @@ export function useModels() {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const searchQuery = ref('')
-  const activeProvider = ref<'All' | 'OpenAI' | 'Claude' | 'Other'>('All')
+  const activeProvider = ref<'All' | 'OpenAI' | 'Claude' | 'DeepSeek' | 'Other'>('All')
   const exchangeRate = ref(7.2)
 
   const filteredModels = computed(() =>
@@ -163,7 +164,7 @@ export function useModels() {
             const p = pricing[m.id]
             modelMap.set(m.id, {
               id: m.id,
-              displayName: m.display_name,
+              displayName: m.display_name || m.id,
               provider: inferProvider(m.id),
               createdAt: config.modelReleaseDates?.[m.id] ?? '',
               channels: [{ name: channel.name, discount: channel.discount }],

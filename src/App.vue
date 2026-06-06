@@ -70,12 +70,13 @@ const selectedModel = ref<ModelItem | null>(null)
 const partialErrors = ref<string[]>([])
 
 const sidebarItems = computed(() => {
-  const counts = { All: models.value.length, OpenAI: 0, Claude: 0, Other: 0 }
+  const counts = { All: models.value.length, OpenAI: 0, Claude: 0, DeepSeek: 0, Other: 0 }
   for (const m of models.value) counts[m.provider]++
   return [
     { value: 'All', label: '全部', count: counts.All },
     { value: 'OpenAI', label: 'OpenAI', count: counts.OpenAI },
     { value: 'Claude', label: 'Claude', count: counts.Claude },
+    { value: 'DeepSeek', label: 'DeepSeek', count: counts.DeepSeek },
     { value: 'Other', label: '其他', count: counts.Other }
   ]
 })
