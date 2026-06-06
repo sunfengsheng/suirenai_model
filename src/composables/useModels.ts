@@ -27,6 +27,11 @@ export interface ModelItem {
 
 type PricingData = Record<string, { input: string; output: string }>
 
+interface LiteLLMEntry {
+  input_cost_per_token?: number
+  output_cost_per_token?: number
+}
+
 function inferProvider(id: string): ModelItem['provider'] {
   if (id.startsWith('claude')) return 'Claude'
   if (id.startsWith('gpt') || id.startsWith('openai/')) return 'OpenAI'
@@ -69,6 +74,33 @@ async function loadPricing(): Promise<PricingData> {
   }
 }
 
+async function fetchLiteLLMPricing(): Promise<PricingData> {
+  const URLS = [
+    'https://cdn.jsdelivr.net/gh/BerriAI/litellm@main/model_prices_and_context_window.json',
+    'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json'
+  ]
+  for (const url of URLS) {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) continue
+      const raw: Record<string, LiteLLMEntry> = await res.json()
+      const result: PricingData = {}
+      for (const [id, entry] of Object.entries(raw)) {
+        if (entry.input_cost_per_token != null && entry.output_cost_per_token != null) {
+          result[id] = {
+            input: (entry.input_cost_per_token * 1_000_000).toFixed(2),
+            output: (entry.output_cost_per_token * 1_000_000).toFixed(2)
+          }
+        }
+      }
+      return result
+    } catch {
+      continue
+    }
+  }
+  return {}
+}
+
 export function useModels() {
   const models = ref<ModelItem[]>([])
   const loading = ref(false)
@@ -99,9 +131,10 @@ export function useModels() {
       return []
     }
 
-    const [rateResult, pricingResult, ...channelResults] = await Promise.allSettled([
+    const [rateResult, pricingResult, litellmResult, ...channelResults] = await Promise.allSettled([
       fetchExchangeRate(),
       loadPricing(),
+      fetchLiteLLMPricing(),
       ...config.channels.map((ch: Channel) => fetchWithKey(ch.key))
     ])
 
@@ -109,7 +142,10 @@ export function useModels() {
       exchangeRate.value = rateResult.value
     }
 
-    const pricing: PricingData = pricingResult.status === 'fulfilled' ? pricingResult.value : {}
+    // LiteLLM provides baseline prices; manual pricing.json overrides take priority
+    const litellmPricing: PricingData = litellmResult.status === 'fulfilled' ? litellmResult.value : {}
+    const manualPricing: PricingData = pricingResult.status === 'fulfilled' ? pricingResult.value : {}
+    const pricing: PricingData = { ...litellmPricing, ...manualPricing }
 
     const modelMap = new Map<string, ModelItem>()
     const errors: string[] = []

@@ -46,6 +46,9 @@ function mockFetch(responses: Record<string, typeof mockCh0Response>) {
     if (urlStr === '/pricing.json') {
       return { ok: true, json: async () => MOCK_PRICING } as Response
     }
+    if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
+      return { ok: true, json: async () => ({}) } as Response
+    }
     const headers = (opts?.headers ?? {}) as Record<string, string>
     const auth = headers['Authorization'] ?? ''
     const matchedChannel = MOCK_CONFIG.channels.find(ch => auth.includes(ch.key))
@@ -125,6 +128,9 @@ describe('useModels', () => {
       if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
       if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
       if (urlStr === '/pricing.json') return { ok: true, json: async () => MOCK_PRICING } as Response
+      if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
+        return { ok: true, json: async () => ({}) } as Response
+      }
       const headers = (opts?.headers ?? {}) as Record<string, string>
       const auth = headers['Authorization'] ?? ''
       if (auth.includes(MOCK_CONFIG.channels[0].key)) {
@@ -145,6 +151,9 @@ describe('useModels', () => {
       if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
       if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
       if (urlStr === '/pricing.json') return { ok: true, json: async () => MOCK_PRICING } as Response
+      if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
+        return { ok: true, json: async () => ({}) } as Response
+      }
       throw new Error('Network error')
     }))
     const { fetchModels, error } = useModels()
@@ -157,5 +166,57 @@ describe('useModels', () => {
     const { fetchModels, exchangeRate } = useModels()
     await fetchModels()
     expect(exchangeRate.value).toBe(7.2)
+  })
+
+  it('uses LiteLLM pricing when model not in pricing.json', async () => {
+    const litellmData = {
+      'gpt-5.2': { input_cost_per_token: 0.000005, output_cost_per_token: 0.000015 }
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url: string | Request, opts?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : (url as Request).url
+      if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
+      if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
+      if (urlStr === '/pricing.json') return { ok: true, json: async () => MOCK_PRICING } as Response
+      if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
+        return { ok: true, json: async () => litellmData } as Response
+      }
+      const headers = (opts?.headers ?? {}) as Record<string, string>
+      const auth = headers['Authorization'] ?? ''
+      const matchedChannel = MOCK_CONFIG.channels.find(ch => auth.includes(ch.key))
+      const data = matchedChannel?.name === MOCK_CONFIG.channels[0].name ? mockCh0Response : emptyResponse
+      return { ok: true, json: async () => data } as Response
+    }))
+    const { models, fetchModels } = useModels()
+    await fetchModels()
+    const gpt52 = models.value.find(m => m.id === 'gpt-5.2')
+    expect(gpt52?.pricing).toBeDefined()
+    expect(gpt52?.pricing?.input).toBe('5.00')
+    expect(gpt52?.pricing?.output).toBe('15.00')
+  })
+
+  it('manual pricing.json overrides LiteLLM pricing', async () => {
+    const litellmData = {
+      'gpt-4o': { input_cost_per_token: 0.000001, output_cost_per_token: 0.000001 }
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url: string | Request, opts?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : (url as Request).url
+      if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
+      if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
+      if (urlStr === '/pricing.json') return { ok: true, json: async () => MOCK_PRICING } as Response
+      if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
+        return { ok: true, json: async () => litellmData } as Response
+      }
+      const headers = (opts?.headers ?? {}) as Record<string, string>
+      const auth = headers['Authorization'] ?? ''
+      const matchedChannel = MOCK_CONFIG.channels.find(ch => auth.includes(ch.key))
+      const data = matchedChannel?.name === MOCK_CONFIG.channels[0].name ? mockCh0Response : emptyResponse
+      return { ok: true, json: async () => data } as Response
+    }))
+    const { models, fetchModels } = useModels()
+    await fetchModels()
+    const gpt4o = models.value.find(m => m.id === 'gpt-4o')
+    // MOCK_PRICING has input: '5', output: '15' — should win over LiteLLM's '1.00'
+    expect(gpt4o?.pricing?.input).toBe('5')
+    expect(gpt4o?.pricing?.output).toBe('15')
   })
 })
