@@ -3,8 +3,8 @@ import { useModels } from '../src/composables/useModels'
 
 const MOCK_CONFIG = {
   channels: [
-    { key: 'key-openai-1', name: 'gpt 通道1', discount: 0.3 },
-    { key: 'key-claude-1', name: 'claude 通道1', discount: 0.3 }
+    { proxyPath: '/proxy/ch0/', name: 'gpt 通道1', discount: 0.3 },
+    { proxyPath: '/proxy/ch1/', name: 'claude 通道1', discount: 0.3 }
   ],
   modelReleaseDates: {
     'gpt-4o': '2024-05-13'
@@ -35,7 +35,7 @@ const emptyResponse = { data: [], object: 'list' }
 const mockRateJson = { rates: { CNY: 7.2 } }
 
 function mockFetch(responses: Record<string, typeof mockCh0Response>) {
-  vi.stubGlobal('fetch', vi.fn(async (url: string | Request, opts?: RequestInit) => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string | Request) => {
     const urlStr = typeof url === 'string' ? url : (url as Request).url
     if (urlStr.includes('frankfurter')) {
       return { ok: true, json: async () => mockRateJson } as Response
@@ -49,9 +49,7 @@ function mockFetch(responses: Record<string, typeof mockCh0Response>) {
     if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
       return { ok: true, json: async () => ({}) } as Response
     }
-    const headers = (opts?.headers ?? {}) as Record<string, string>
-    const auth = headers['Authorization'] ?? ''
-    const matchedChannel = MOCK_CONFIG.channels.find(ch => auth.includes(ch.key))
+    const matchedChannel = MOCK_CONFIG.channels.find(ch => urlStr.startsWith(ch.proxyPath))
     const data = matchedChannel ? (responses[matchedChannel.name] ?? emptyResponse) : emptyResponse
     return { ok: true, json: async () => data } as Response
   }))
@@ -123,7 +121,7 @@ describe('useModels', () => {
   })
 
   it('returns partial error when one channel fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string | Request, opts?: RequestInit) => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string | Request) => {
       const urlStr = typeof url === 'string' ? url : (url as Request).url
       if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
       if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
@@ -131,9 +129,7 @@ describe('useModels', () => {
       if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
         return { ok: true, json: async () => ({}) } as Response
       }
-      const headers = (opts?.headers ?? {}) as Record<string, string>
-      const auth = headers['Authorization'] ?? ''
-      if (auth.includes(MOCK_CONFIG.channels[0].key)) {
+      if (urlStr.startsWith(MOCK_CONFIG.channels[0].proxyPath)) {
         return { ok: true, json: async () => mockCh0Response } as Response
       }
       throw new Error('Network error')
@@ -172,7 +168,7 @@ describe('useModels', () => {
     const litellmData = {
       'gpt-5.2': { input_cost_per_token: 0.000005, output_cost_per_token: 0.000015 }
     }
-    vi.stubGlobal('fetch', vi.fn(async (url: string | Request, opts?: RequestInit) => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string | Request) => {
       const urlStr = typeof url === 'string' ? url : (url as Request).url
       if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
       if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
@@ -180,11 +176,8 @@ describe('useModels', () => {
       if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
         return { ok: true, json: async () => litellmData } as Response
       }
-      const headers = (opts?.headers ?? {}) as Record<string, string>
-      const auth = headers['Authorization'] ?? ''
-      const matchedChannel = MOCK_CONFIG.channels.find(ch => auth.includes(ch.key))
-      const data = matchedChannel?.name === MOCK_CONFIG.channels[0].name ? mockCh0Response : emptyResponse
-      return { ok: true, json: async () => data } as Response
+      if (urlStr.startsWith(MOCK_CONFIG.channels[0].proxyPath)) return { ok: true, json: async () => mockCh0Response } as Response
+      return { ok: true, json: async () => emptyResponse } as Response
     }))
     const { models, fetchModels } = useModels()
     await fetchModels()
@@ -198,7 +191,7 @@ describe('useModels', () => {
     const litellmData = {
       'gpt-4o': { input_cost_per_token: 0.000001, output_cost_per_token: 0.000001 }
     }
-    vi.stubGlobal('fetch', vi.fn(async (url: string | Request, opts?: RequestInit) => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string | Request) => {
       const urlStr = typeof url === 'string' ? url : (url as Request).url
       if (urlStr.includes('frankfurter')) return { ok: true, json: async () => mockRateJson } as Response
       if (urlStr === '/config.json') return { ok: true, json: async () => MOCK_CONFIG } as Response
@@ -206,16 +199,12 @@ describe('useModels', () => {
       if (urlStr.includes('jsdelivr') || urlStr.includes('BerriAI/litellm')) {
         return { ok: true, json: async () => litellmData } as Response
       }
-      const headers = (opts?.headers ?? {}) as Record<string, string>
-      const auth = headers['Authorization'] ?? ''
-      const matchedChannel = MOCK_CONFIG.channels.find(ch => auth.includes(ch.key))
-      const data = matchedChannel?.name === MOCK_CONFIG.channels[0].name ? mockCh0Response : emptyResponse
-      return { ok: true, json: async () => data } as Response
+      if (urlStr.startsWith(MOCK_CONFIG.channels[0].proxyPath)) return { ok: true, json: async () => mockCh0Response } as Response
+      return { ok: true, json: async () => emptyResponse } as Response
     }))
     const { models, fetchModels } = useModels()
     await fetchModels()
     const gpt4o = models.value.find(m => m.id === 'gpt-4o')
-    // MOCK_PRICING has input: '5', output: '15' — should win over LiteLLM's '1.00'
     expect(gpt4o?.pricing?.input).toBe('5')
     expect(gpt4o?.pricing?.output).toBe('15')
   })

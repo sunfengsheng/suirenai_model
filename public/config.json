@@ -1,11 +1,9 @@
 {
-  "baseUrl": "https://api.suirenai.com",
   "channels": [
-    {"key": "sk-8e7bc96941b74e6f5dd2c4f551be12c34b5fa0767a0ac6d50a19e7f234cc241e", "name": "gpt 通道1", "discount": 0.3},
-    {"key": "sk-d0cd7b1c19a8532783d62eaa44137a7a65d670af8c269052f69398939b7a073d", "name": "claude 通道1", "discount": 0.3},
-    {"key": "sk-bb25871f4fabd091a86786caf3c9436a9951125d62e9313ea5de8b1d310f085c", "name": "gpt 通道2", "discount": 0.3},
-    {"key": "sk-32b3bf6dc5fbfb905dcdb69794068c6b1fcee33c22bc232b715b6a0125aec90b", "name": "claude 通道2", "discount": 0.3},
-{"key": "sk-c99cbaf052e117f47eb92896b6c6097948b7fda87b5a74f1a4ebf842397ceee2", "name": "deepseek", "discount": 1}
+    {"proxyPath": "/proxy/ch0/", "name": "gpt 通道1", "discount": 0.3},
+    {"proxyPath": "/proxy/ch1/", "name": "claude 通道1", "discount": 0.3},
+    {"proxyPath": "/proxy/ch2/", "name": "gpt 通道2", "discount": 0.3},
+    {"proxyPath": "/proxy/ch3/", "name": "claude 通道2", "discount": 0.3}
   ],
   "modelReleaseDates": {
     "gpt-4o": "2024-05-13",

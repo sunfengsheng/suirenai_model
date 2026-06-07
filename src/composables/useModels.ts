@@ -38,10 +38,8 @@ function inferProvider(id: string): ModelItem['provider'] {
   return 'Other'
 }
 
-async function fetchWithKey(key: string): Promise<RawModel[]> {
-  const res = await fetch('/v1/models', {
-    headers: { Authorization: `Bearer ${key}` }
-  })
+async function fetchViaProxy(proxyPath: string): Promise<RawModel[]> {
+  const res = await fetch(`${proxyPath}v1/models`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
   return json.data as RawModel[]
@@ -142,7 +140,7 @@ export function useModels() {
       fetchExchangeRate(),
       loadPricing(),
       fetchLiteLLMPricing(),
-      ...config.channels.map((ch: Channel) => fetchWithKey(ch.key))
+      ...config.channels.map((ch: Channel) => fetchViaProxy(ch.proxyPath))
     ])
 
     if (rateResult.status === 'fulfilled') {

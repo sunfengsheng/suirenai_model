@@ -1,5 +1,5 @@
 export interface Channel {
-  key: string
+  proxyPath: string
   name: string
   discount: number
 }
