@@ -3,7 +3,8 @@
     {"proxyPath": "/proxy/ch0/", "name": "gpt 通道1", "discount": 0.3},
     {"proxyPath": "/proxy/ch1/", "name": "claude 通道1", "discount": 0.3},
     {"proxyPath": "/proxy/ch2/", "name": "gpt 通道2", "discount": 0.3},
-    {"proxyPath": "/proxy/ch3/", "name": "claude 通道2", "discount": 0.3}
+    {"proxyPath": "/proxy/ch3/", "name": "claude 通道2", "discount": 0.3},
+    {"proxyPath": "/proxy/ch4/", "name": "gpt4", "discount": 0.02}
   ],
   "modelReleaseDates": {
     "gpt-4o": "2024-05-13",

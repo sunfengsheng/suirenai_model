@@ -14,6 +14,11 @@ server {
     gzip on;
     gzip_types text/plain text/css application/javascript application/json;
 
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }

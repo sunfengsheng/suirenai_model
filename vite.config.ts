@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    base: '/model/',
     plugins: [vue()],
     server: { proxy: proxyEntries },
     test: {

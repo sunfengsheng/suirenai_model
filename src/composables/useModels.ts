@@ -39,7 +39,8 @@ function inferProvider(id: string): ModelItem['provider'] {
 }
 
 async function fetchViaProxy(proxyPath: string): Promise<RawModel[]> {
-  const res = await fetch(`${proxyPath}v1/models`)
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const res = await fetch(`${base}${proxyPath}v1/models`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
   return json.data as RawModel[]
@@ -57,14 +58,14 @@ async function fetchExchangeRate(): Promise<number> {
 }
 
 async function loadConfig(): Promise<AppConfig> {
-  const res = await fetch('/config.json')
+  const res = await fetch(`${import.meta.env.BASE_URL}config.json`)
   if (!res.ok) throw new Error('Failed to load config.json')
   return res.json()
 }
 
 async function loadPricing(): Promise<PricingData> {
   try {
-    const res = await fetch('/pricing.json')
+    const res = await fetch(`${import.meta.env.BASE_URL}pricing.json`)
     if (!res.ok) return {}
     return res.json()
   } catch {
@@ -186,7 +187,11 @@ export function useModels() {
       error.value = '所有渠道均请求失败，请检查 public/config.json'
     }
 
-    models.value = Array.from(modelMap.values())
+    const providerOrder: Record<string, number> = { OpenAI: 0, Claude: 1, Other: 2 }
+    models.value = Array.from(modelMap.values()).sort((a, b) =>
+      (providerOrder[a.provider] ?? 9) - (providerOrder[b.provider] ?? 9)
+        || a.id.localeCompare(b.id)
+    )
     loading.value = false
     return errors
   }

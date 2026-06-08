@@ -85,7 +85,7 @@ const channelPricing = computed(() => {
   const outputUSD = parseFloat(m.pricing.output)
   return m.channels.map(ch => ({
     name: ch.name,
-    discountLabel: ch.discount === 1 ? '无折扣' : `${Math.round(ch.discount * 10)}折`,
+    discountLabel: ch.discount === 1 ? '无折扣' : `${parseFloat((ch.discount * 10).toPrecision(2))}折`,
     inputCNY: (inputUSD * ch.discount * props.exchangeRate).toFixed(2),
     outputCNY: (outputUSD * ch.discount * props.exchangeRate).toFixed(2),
   }))
