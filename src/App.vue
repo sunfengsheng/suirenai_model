@@ -16,6 +16,10 @@
             clearable
             size="large"
           />
+          <el-button-group class="view-toggle">
+            <el-button :type="viewMode === 'model' ? 'primary' : ''" @click="viewMode = 'model'" size="large">按模型</el-button>
+            <el-button :type="viewMode === 'channel' ? 'primary' : ''" @click="viewMode = 'channel'" size="large">按渠道</el-button>
+          </el-button-group>
         </div>
 
         <el-alert
@@ -35,20 +39,25 @@
 
         <el-empty v-else-if="error" :description="error" image-size="120" />
 
-        <el-empty
-          v-else-if="!loading && filteredModels.length === 0"
-          description="没有找到匹配的模型"
-          image-size="120"
-        />
+        <template v-else-if="viewMode === 'channel'">
+          <ChannelView :models-by-channel="modelsByChannel" @select="selectedModel = $event" />
+        </template>
 
-        <div v-else class="model-grid">
-          <ModelCard
-            v-for="model in filteredModels"
-            :key="model.id"
-            :model="model"
-            @click="selectedModel = model"
+        <template v-else>
+          <el-empty
+            v-if="filteredModels.length === 0"
+            description="没有找到匹配的模型"
+            image-size="120"
           />
-        </div>
+          <div v-else class="model-grid">
+            <ModelCard
+              v-for="model in filteredModels"
+              :key="model.id"
+              :model="model"
+              @click="selectedModel = model"
+            />
+          </div>
+        </template>
       </main>
     </div>
 
@@ -63,10 +72,12 @@ import { useModels } from './composables/useModels'
 import SidebarFilter from './components/SidebarFilter.vue'
 import ModelCard from './components/ModelCard.vue'
 import ModelDetail from './components/ModelDetail.vue'
+import ChannelView from './components/ChannelView.vue'
 import type { ModelItem } from './composables/useModels'
 
-const { models, loading, error, searchQuery, activeProvider, filteredModels, fetchModels, exchangeRate } = useModels()
+const { models, loading, error, searchQuery, activeProvider, filteredModels, modelsByChannel, fetchModels, exchangeRate } = useModels()
 const selectedModel = ref<ModelItem | null>(null)
+const viewMode = ref<'model' | 'channel'>('model')
 const partialErrors = ref<string[]>([])
 
 const sidebarItems = computed(() => {
@@ -126,7 +137,13 @@ body {
   flex: 1;
   min-width: 0;
 }
-.search-bar { margin-bottom: 16px; }
+.search-bar {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.view-toggle { flex-shrink: 0; }
 .model-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

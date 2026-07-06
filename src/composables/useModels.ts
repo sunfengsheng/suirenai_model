@@ -13,6 +13,12 @@ export interface ChannelEntry {
   discount: number
 }
 
+export interface ChannelGroup {
+  name: string
+  discount: number
+  models: ModelItem[]
+}
+
 export interface ModelItem {
   id: string
   displayName: string
@@ -124,6 +130,19 @@ export function useModels() {
     })
   )
 
+  const modelsByChannel = computed((): ChannelGroup[] => {
+    const map = new Map<string, ChannelGroup>()
+    for (const model of models.value) {
+      for (const ch of model.channels) {
+        if (!map.has(ch.name)) {
+          map.set(ch.name, { name: ch.name, discount: ch.discount, models: [] })
+        }
+        map.get(ch.name)!.models.push(model)
+      }
+    }
+    return Array.from(map.values())
+  })
+
   async function fetchModels(): Promise<string[]> {
     loading.value = true
     error.value = null
@@ -196,5 +215,5 @@ export function useModels() {
     return errors
   }
 
-  return { models, loading, error, searchQuery, activeProvider, filteredModels, fetchModels, exchangeRate }
+  return { models, loading, error, searchQuery, activeProvider, filteredModels, modelsByChannel, fetchModels, exchangeRate }
 }

@@ -10,10 +10,10 @@ export default defineConfig(({ mode }) => {
     const key = env[`PROXY_KEY_${i}`]
     if (!key) break
     const idx = i
-    proxyEntries[`/proxy/ch${idx}`] = {
+    proxyEntries[`/model/proxy/ch${idx}`] = {
       target: 'https://api.suirenai.com',
       changeOrigin: true,
-      rewrite: (path: string) => path.replace(new RegExp(`^/proxy/ch${idx}`), ''),
+      rewrite: (path: string) => path.replace(new RegExp(`^/model/proxy/ch${idx}`), ''),
       configure: (proxy: any) => {
         proxy.on('proxyReq', (proxyReq: any) => {
           proxyReq.setHeader('Authorization', `Bearer ${key}`)
