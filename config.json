@@ -1,0 +1,29 @@
+{
+  "channels": [
+    {"proxyPath": "/proxy/ch0/", "name": "gpt 通道1", "discount": 0.3},
+    {"proxyPath": "/proxy/ch1/", "name": "claude 通道1", "discount": 0.3},
+    {"proxyPath": "/proxy/ch2/", "name": "gpt 通道2", "discount": 0.3},
+    {"proxyPath": "/proxy/ch3/", "name": "claude 通道2", "discount": 0.3},
+    {"proxyPath": "/proxy/ch4/", "name": "gpt4", "discount": 0.02},
+    {"proxyPath": "/proxy/ch5/", "name": "gpt codex", "discount": 0.07}
+  ],
+  "modelReleaseDates": {
+    "gpt-4o": "2024-05-13",
+    "openai/gpt-4o": "2024-05-13",
+    "openai/gpt-4o-mini": "2024-07-18",
+    "openai/gpt-4.1": "2025-04-14",
+    "openai/gpt-4.1-mini": "2025-04-14",
+    "openai/gpt-4.1-nano": "2025-04-14",
+    "gpt-5.2": "2025-07-09",
+    "gpt-5.4": "2025-08-01",
+    "gpt-5.4-mini": "2025-08-01",
+    "gpt-5.5": "2025-09-01",
+    "gpt-5.3-codex": "2025-07-01",
+    "openai/gpt-5.3-codex": "2025-07-01",
+    "openai/gpt-5.5": "2025-09-01",
+    "claude-haiku-4-5": "2025-07-08",
+    "claude-sonnet-4-6": "2025-10-01",
+    "claude-opus-4-6": "2025-10-01",
+    "claude-opus-4-7": "2026-02-01"
+  }
+}
